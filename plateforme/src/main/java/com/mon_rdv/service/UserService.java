@@ -31,5 +31,6 @@ public class UserService {
     public List<User> findByRegistrationDateBetween(LocalDate start, LocalDate end) {
         return repo.findByRegistrationDateBetween(start, end);
     }
+    
 
 }
