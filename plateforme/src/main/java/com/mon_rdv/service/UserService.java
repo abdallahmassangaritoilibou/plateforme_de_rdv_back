@@ -32,5 +32,25 @@ public class UserService {
         return repo.findByRegistrationDateBetween(start, end);
     }
     
+    /**
+     * Vérifie si un email existe déjà en base
+     */
+    public boolean existsByEmail(String email) {
+        return repo.existsByEmail(email);
+    }
+
+    /**
+     * Sauvegarde un utilisateur (alias pour create)
+     */
+    public User save(User user) {
+        return repo.save(user);
+    }
+
+    /**
+     * Trouve un utilisateur par son email
+     */
+    public Optional<User> findByEmail(String email) {
+        return repo.findByEmail(email);
+    }
 
 }
