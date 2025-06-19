@@ -3,6 +3,7 @@ package com.mon_rdv.controller;
 
 
 
+import com.mon_rdv.dto.UserLoginDTO;
 import com.mon_rdv.dto.UserRegistrationDTO;
 import com.mon_rdv.model.User;
 import com.mon_rdv.service.UserService;
@@ -67,6 +68,39 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body("Inscription réussie");
+    }
+
+    /**
+     * POST /api/auth/login
+     * Connexion d'un utilisateur.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<String> login(
+            @Valid @RequestBody UserLoginDTO dto,
+            BindingResult bindingResult) {
+        // Vérification des erreurs de validation
+        if (bindingResult.hasErrors()) {
+            String errorMsg = bindingResult.getAllErrors()
+                    .get(0)
+                    .getDefaultMessage();
+            return ResponseEntity
+                    .badRequest()
+                    .body(errorMsg);
+        }
+
+        // Vérifier si l'utilisateur existe
+        return userService.findByEmail(dto.getEmail())
+                .map(user -> {
+                    // Vérifier le mot de passe
+                    if (passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+                        return ResponseEntity.ok("Connexion réussie");
+                    } else {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .body("Mot de passe incorrect");
+                    }
+                })
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Utilisateur non trouvé"));
     }
 }
 
