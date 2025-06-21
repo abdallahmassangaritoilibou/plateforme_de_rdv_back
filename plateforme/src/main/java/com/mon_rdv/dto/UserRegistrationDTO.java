@@ -1,4 +1,5 @@
 package com.mon_rdv.dto;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,12 +21,20 @@ public class UserRegistrationDTO {
     @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caractères")
     private String password;
 
+    @NotBlank(message = "La confirmation du mot de passe est requise")
+    private String confirmPassword;
+
+    @AssertTrue(message = "Les mots de passe ne correspondent pas") // Cette méthode sert à valider que les deux champs sont égaux
+    public boolean isPasswordsMatching() {
+        return password != null && password.equals(confirmPassword);
+    }
     public UserRegistrationDTO() {}
-    public UserRegistrationDTO(String forename, String surname, String email, String password) {
+    public UserRegistrationDTO(String forename, String surname, String email, String password, String confirmPassword) {
         this.forename = forename;
         this.surname = surname;
         this.email = email;
         this.password = password;
+        this.confirmPassword = confirmPassword;
     }
 
     public String getForename() {
@@ -54,5 +63,12 @@ public class UserRegistrationDTO {
     }
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
     }
 }

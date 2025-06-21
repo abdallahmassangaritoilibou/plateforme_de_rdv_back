@@ -1,15 +1,19 @@
 package com.mon_rdv.controller;
 
+import com.mon_rdv.dto.UserRegistrationDTO;
 import com.mon_rdv.model.User;
 import com.mon_rdv.repository.UserRepository;
+
+import jakarta.validation.Valid;
+
 import java.util.List;
+
 
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -59,21 +63,36 @@ public class UserController {
         }
     }
 
-    // POST - Créer un nouvel utilisateur
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        try {
-            // Vérifier si l'email existe déjà
-            if (userRepository.existsByEmail(user.getEmail())) {
-                return new ResponseEntity<>(HttpStatus.CONFLICT); // 409 - Email déjà utilisé
-            }
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            User savedUser = userRepository.save(user);
-            return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    // Cette méthode permet de créer un nouvel utilisateur à partir d'un DTO (UserRegistrationDTO)
+@PostMapping
+public ResponseEntity<?> createUser(
+    @Valid @RequestBody UserRegistrationDTO userDTO,  
+    BindingResult result                              
+) {
+    // Si la validation échoue (ex: champ vide, mots de passe non identiques, etc.)
+    if (result.hasErrors()) {
+        // On retourne la première erreur trouvée avec un code HTTP 400 (BAD_REQUEST)
+        return new ResponseEntity<>(result.getAllErrors().get(0).getDefaultMessage(), HttpStatus.BAD_REQUEST);
     }
+
+    // On vérifie si un utilisateur avec le même email existe déjà en base
+    if (userRepository.existsByEmail(userDTO.getEmail())) {
+        // Si c'est le cas, on retourne une réponse HTTP 409 (CONFLICT)
+        return new ResponseEntity<>("Email déjà utilisé", HttpStatus.CONFLICT);
+    }
+
+    // Si tout est bon, on crée un nouvel utilisateur
+    User user = new User(
+        userDTO.getForename(),                         
+        userDTO.getSurname(),                          
+        userDTO.getEmail(),                            
+        passwordEncoder.encode(userDTO.getPassword())  // Mot de passe encodé avec BCrypt
+    );
+
+    // On enregistre l'utilisateur dans la base et on retourne une réponse HTTP 201 (CREATED)
+    return new ResponseEntity<>(userRepository.save(user), HttpStatus.CREATED);
+}
+
 
     // PUT - Mettre à jour un utilisateur
     @PutMapping("/{id}")
