@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/availabilities")
@@ -48,6 +49,29 @@ public class AvailabilityController {
             return ResponseEntity.status(HttpStatus.CREATED).body(createdAvailability);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+     
+
+    //  PATCH pour ne mettre à jour que isBooked 
+    @PatchMapping("/{id}")
+    public ResponseEntity<Void> patchAvailability(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> body) {
+
+        Boolean booked = body.get("isBooked");
+        if (booked == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            Availability avail = availabilityService.getAvailabilityById(id);
+            avail.setBooked(booked);
+            availabilityService.createAvailability(avail);  
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

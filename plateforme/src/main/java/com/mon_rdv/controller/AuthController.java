@@ -1,13 +1,14 @@
 package com.mon_rdv.controller;
 
-
-
-
+import com.mon_rdv.dto.UserResponseDTO;
 import com.mon_rdv.dto.UserLoginDTO;
 import com.mon_rdv.dto.UserRegistrationDTO;
 import com.mon_rdv.model.User;
 import com.mon_rdv.service.UserService;
 import jakarta.validation.Valid;
+
+import java.util.Optional;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,14 +17,15 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
 
     public AuthController(UserService userService,
-                          PasswordEncoder passwordEncoder) {
-        this.userService     = userService;
+            PasswordEncoder passwordEncoder) {
+        this.userService = userService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -34,13 +36,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(
             @Valid @RequestBody UserRegistrationDTO dto,
-            BindingResult bindingResult
-    ) {
+            BindingResult bindingResult) {
         // Vérification des erreurs de validation
         if (bindingResult.hasErrors()) {
             String errorMsg = bindingResult.getAllErrors()
-                                          .get(0)
-                                          .getDefaultMessage();
+                    .get(0)
+                    .getDefaultMessage();
             return ResponseEntity
                     .badRequest()
                     .body(errorMsg);
@@ -55,16 +56,15 @@ public class AuthController {
 
         // Créer l'entité User et hashe le mot de passe
         User user = new User(
-            dto.getForename(),
-            dto.getSurname(),
-            dto.getEmail(),
-            passwordEncoder.encode(dto.getPassword())
-        );
+                dto.getForename(),
+                dto.getSurname(),
+                dto.getEmail(),
+                passwordEncoder.encode(dto.getPassword()));
 
         // Sauvegarde
         userService.save(user);
 
-        // Réponse 
+        // Réponse
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body("Inscription réussie");
@@ -75,7 +75,7 @@ public class AuthController {
      * Connexion d'un utilisateur.
      */
     @PostMapping("/login")
-    public ResponseEntity<String> login(
+    public ResponseEntity<?> login(
             @Valid @RequestBody UserLoginDTO dto,
             BindingResult bindingResult) {
         // Vérification des erreurs de validation
@@ -87,20 +87,33 @@ public class AuthController {
                     .badRequest()
                     .body(errorMsg);
         }
+        Optional<User> userOpt = userService.findByEmail(dto.getEmail());
 
         // Vérifier si l'utilisateur existe
-        return userService.findByEmail(dto.getEmail())
-                .map(user -> {
-                    // Vérifier le mot de passe
-                    if (passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-                        return ResponseEntity.ok("Connexion réussie");
-                    } else {
-                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                .body("Mot de passe incorrect");
-                    }
-                })
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Utilisateur non trouvé"));
+        if (userOpt.isEmpty()) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("Identifiants invalides");
+        }
+
+        User user = userOpt.get();
+
+        // Vérifier le mot de passe
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("Identifiants invalides");
+        }
+
+        // Créer un DTO de réponse
+        UserResponseDTO responseDTO = new UserResponseDTO(
+                user.getId(),
+                user.getForename(),
+                user.getSurname(),
+                user.getEmail());
+
+        // Réponse avec les informations de l'utilisateur
+        return ResponseEntity.ok(responseDTO);
+
     }
 }
-

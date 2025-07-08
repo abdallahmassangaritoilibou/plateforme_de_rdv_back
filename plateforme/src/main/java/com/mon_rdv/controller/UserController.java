@@ -5,7 +5,7 @@ import com.mon_rdv.model.User;
 import com.mon_rdv.repository.UserRepository;
 
 import jakarta.validation.Valid;
-
+import com.mon_rdv.service.UserService;
 import java.util.List;
 
 
@@ -20,10 +20,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "*")
 public class UserController {
-
+    private final UserService userService;
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    public UserController(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserController(UserService userService,UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+        this.userService = userService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -88,9 +89,10 @@ public ResponseEntity<?> createUser(
         userDTO.getEmail(),                            
         passwordEncoder.encode(userDTO.getPassword())  // Mot de passe encodé avec BCrypt
     );
-
+     
+    User saved = userService.create(user);
     // On enregistre l'utilisateur dans la base et on retourne une réponse HTTP 201 (CREATED)
-    return new ResponseEntity<>(userRepository.save(user), HttpStatus.CREATED);
+    return new ResponseEntity<>(saved, HttpStatus.CREATED);
 }
 
 
@@ -129,40 +131,7 @@ public ResponseEntity<?> createUser(
         }
     }
 
-    // POST - Créer des utilisateurs de test
-    @PostMapping("/test-data")
-    public ResponseEntity<List<User>> createTestUsers() {
-        try {
-            // Créer des utilisateurs de test
-            User user1 = new User();
-            user1.setForename("Jean");
-            user1.setSurname("Dupont");
-            user1.setEmail("jean.dupont@email.com");
-            user1.setPassword(passwordEncoder.encode("password123"));
-
-            User user2 = new User();
-            user2.setForename("Marie");
-            user2.setSurname("Martin");
-            user2.setEmail("marie.martin@email.com");
-            user2.setPassword(passwordEncoder.encode("password456"));;
-
-            User user3 = new User();
-            user3.setForename("Pierre");
-            user3.setSurname("Durand");
-            user3.setEmail("pierre.durand@email.com");
-            user3.setPassword(passwordEncoder.encode("password789"));
-            // Set password or other fields as needed
-
-            userRepository.save(user1);
-            userRepository.save(user2);
-            userRepository.save(user3);
-
-            List<User> testUsers = List.of(user1, user2, user3);
-            return new ResponseEntity<>(testUsers, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+   
 
     // GET - Statistiques des utilisateurs
     @GetMapping("/stats")

@@ -17,9 +17,10 @@ public class RendezVous {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "availability", nullable = false)
-    private LocalDateTime availability;
-    
+    @ManyToOne()
+    @JoinColumn(name = "availability_id")
+    private Availability availability;
+
     @Column(name = "status", nullable = false)
     private String status;
 
@@ -31,7 +32,7 @@ public class RendezVous {
 
     // Constructeurs
     public RendezVous() {}
-    public RendezVous(User user, LocalDateTime availability, String status) {
+    public RendezVous(User user, Availability availability, String status) {
         this.user = user;
         this.availability = availability;
         this.status = status;
@@ -51,10 +52,10 @@ public class RendezVous {
     public void setUser(User user) {
         this.user = user;
     }
-    public LocalDateTime getAvailability() {
+    public Availability getAvailability() {
         return availability;
     }
-    public void setAvailability(LocalDateTime availability) {
+    public void setAvailability(Availability availability) {
         this.availability = availability;
     }
     public String getStatus() {

@@ -1,70 +1,55 @@
 package com.mon_rdv.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
 
-import java.util.Optional;
+
+
+
 import org.springframework.stereotype.Service;
 
+import com.mon_rdv.model.Availability;
 import com.mon_rdv.model.RendezVous;
 import com.mon_rdv.model.User;
+import com.mon_rdv.repository.AvailabilityRepository;
 import com.mon_rdv.repository.RendezVousRepository;
-import com.mon_rdv.repository.UserRepository;
+
 
 
 @Service
 public class RendezVousService {
+  private final RendezVousRepository rdvRepo;
+  private final AvailabilityRepository availRepo;
 
-    private final RendezVousRepository rendezVousRepository;
-    private final UserRepository userRepository;
+  public RendezVousService(RendezVousRepository rdvRepo,
+                           AvailabilityRepository availRepo) {
+    this.rdvRepo = rdvRepo;
+    this.availRepo = availRepo;
+  }
 
-    public RendezVousService(RendezVousRepository rendezVousRepository, UserRepository userRepository) {
-        this.rendezVousRepository = rendezVousRepository;
-        this.userRepository = userRepository;
-    }
+  public RendezVous createRdv(Long userId, Long availabilityId, String status) {
+    // 1. Charger l’availability
+    Availability avail = availRepo.findById(availabilityId)
+        .orElseThrow(() -> new IllegalArgumentException("Disponibilité introuvable"));
+    if (avail.isBooked())
+      throw new IllegalStateException("Créneau déjà réservé");
 
-    public List<RendezVous> getUserRdv(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new IllegalArgumentException("User not found");
-        }
-        return rendezVousRepository.findByUserId(userId);
-    }
+    // 2. Charger l’utilisateur (ou injecter le user dans les paramètres)
+    User user = new User();
+    user.setId(userId);
 
-    public RendezVous takeRdv(RendezVous rendezVous) {
-        Optional<User> userOpt = userRepository.findById(rendezVous.getUser().getId());
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("User not found");
-        }
-        rendezVous.setUser(userOpt.get());
-        rendezVous.setDateCreation(LocalDateTime.now());
-        rendezVous.setStatus("pending");
-        return rendezVousRepository.save(rendezVous);
-    }
+    // 3. Marquer la dispo réservée
+    avail.setBooked(true);
+    availRepo.save(avail);
 
-    public RendezVous updateRdv(Long id, RendezVous rendezVous) {
-        RendezVous existing = rendezVousRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("RendezVous not found"));
+    // 4. Créer et sauvegarder le RDV
+    RendezVous rdv = new RendezVous(user, avail, status);
+    return rdvRepo.save(rdv);
+  }
 
-        if (!existing.getUser().getId().equals(rendezVous.getUser().getId())) {
-            throw new SecurityException("Forbidden");
-        }
-
-        existing.setAvailability(rendezVous.getAvailability());
-        existing.setStatus(rendezVous.getStatus());
-        existing.setModificationDate(LocalDateTime.now());
-        return rendezVousRepository.save(existing);
-    }
-
-    public void cancelRdv(Long id, Long userId) {
-        RendezVous existing = rendezVousRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("RendezVous not found"));
-
-        if (!existing.getUser().getId().equals(userId)) {
-            throw new SecurityException("Forbidden");
-        }
-
-        rendezVousRepository.deleteById(id);
-    }
+  public void cancelRdv(Long id, Long userId) {
+	
+	throw new UnsupportedOperationException("Unimplemented method 'cancelRdv'");
+  }
 }
 
 
+    
